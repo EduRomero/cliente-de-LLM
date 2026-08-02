@@ -41,7 +41,7 @@ Actualmente soporta:
 
 ```bash
 git clone <url-del-repositorio>
-cd pre-entrega1
+cd cliente-de-LLM
 ```
 
 ### 2. Crear un entorno virtual
