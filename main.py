@@ -1,47 +1,41 @@
 import asyncio
-import os
 
 from dotenv import load_dotenv
-
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
+from factory import LLMFactory, Provider
+from schemas import LLMConfig, GenerationConfig
 
 load_dotenv()
 
 async def main():
 
-    model = ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
-        temperature=0.2,
-        google_api_key=os.getenv("GEMINI_API_KEY")
+    config = LLMConfig()
+
+    generation_config = GenerationConfig(
+        temperature=0.1,
+        max_tokens=2000
     )
 
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "Sos un profesor experto en física que responde de forma clara y breve."
-            ),
-            (
-                "human",
-                "{pregunta}"
-            )
-        ]
-    )
+    clients = [
+        ("Gemini", LLMFactory.create_client(Provider.GEMINI, config)),
+        ("Groq", LLMFactory.create_client(Provider.GROQ, config)),
+    ]
 
-    parser = StrOutputParser()
+    for name, client in clients:
 
-    chain = prompt | model | parser
+        print(f"\n{'=' * 20} {name} {'=' * 20}")
 
-    respuesta = await chain.ainvoke(
-        {
-            "pregunta": "¿Qué es la entropía?"
-        }
-    )
+        print("\nRespuesta completa:\n")
 
-    print(respuesta)
+        response = await client.generate("¿Qué es la entropía?", generation_config)
 
+        print(response.response)
+
+        print("\n\nStreaming:\n")
+
+        async for token in client.stream("¿Qué es la entropía?", generation_config):
+            print(token, end="", flush=True)
+
+        print("\n")
+    
 if __name__ == "__main__":
     asyncio.run(main())
-    
